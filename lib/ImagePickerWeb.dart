@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+import 'dart:convert';
 
 
-// Add dependancy image_picker: ^0.8.3
-
+// add the dependancy : file_picker: ^5.0.0
 
 void main() => runApp(MyApp());
 
@@ -23,33 +23,33 @@ class MediaPickerPage extends StatefulWidget {
 }
 
 class _MediaPickerPageState extends State<MediaPickerPage> {
-  File? _image;
+  Uint8List? _imageBytes;
   String _imageSize = '';
 
   // Function to pick an image
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    // Open the file picker
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
 
-    if (pickedFile != null) {
-      // Get the selected image file
-      File imageFile = File(pickedFile.path);
-
-      // Get the image size (in bytes)
-      int fileSize = await imageFile.length();
+    if (result != null && result.files.isNotEmpty) {
+      // Get the selected file
+      var file = result.files.first;
+      int fileSizeInBytes = file.size;
 
       // Convert file size from bytes to KB or MB
       String size = '';
-      if (fileSize < 1024) {
-        size = '${fileSize}B'; // Bytes
-      } else if (fileSize < 1048576) {
-        size = '${(fileSize / 1024).toStringAsFixed(2)} KB'; // KB
+      if (fileSizeInBytes < 1024) {
+        size = '${fileSizeInBytes}B'; // Bytes
+      } else if (fileSizeInBytes < 1048576) {
+        size = '${(fileSizeInBytes / 1024).toStringAsFixed(2)} KB'; // KB
       } else {
-        size = '${(fileSize / 1048576).toStringAsFixed(2)} MB'; // MB
+        size = '${(fileSizeInBytes / 1048576).toStringAsFixed(2)} MB'; // MB
       }
 
+      // Read the image as bytes
+      final bytes = file.bytes;
       setState(() {
-        _image = imageFile;
+        _imageBytes = bytes;
         _imageSize = size;
       });
     }
@@ -59,7 +59,7 @@ class _MediaPickerPageState extends State<MediaPickerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pick Image and Show Size'),
+        title: Text('Pick Image and Show Size (Web)'),
         backgroundColor: Colors.blue,
       ),
       body: Center(
@@ -67,12 +67,13 @@ class _MediaPickerPageState extends State<MediaPickerPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Display image and its size
-            _image != null
+            _imageBytes != null
                 ? Column(
               children: [
-                Image.file(_image!, width: 200, height: 200), // Display image
+                // Display the image using Image.memory since File is in Uint8List
+                Image.memory(_imageBytes!, width: 200, height: 200),
                 SizedBox(height: 10),
-                Text('Size: $_imageSize', style: TextStyle(fontSize: 16)), // Display image size
+                Text('Size: $_imageSize', style: TextStyle(fontSize: 16)),
               ],
             )
                 : Text('No image selected'),
